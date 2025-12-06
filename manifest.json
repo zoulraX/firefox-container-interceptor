@@ -1,0 +1,41 @@
+{
+    "manifest_version": 2,
+    "name": "Container Interceptor",
+    "version": "1.0",
+    "description": "Intercepts navigation to let user choose a container.",
+    "permissions": [
+        "webRequest",
+        "webRequestBlocking",
+        "contextualIdentities",
+        "cookies",
+        "storage",
+        "menus",
+        "tabs",
+        "<all_urls>"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "web_accessible_resources": [
+        "interstitial.html",
+        "interstitial.js",
+        "style.css"
+    ],
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "container-interceptor@antigravity.local",
+            "strict_min_version": "57.0"
+        }
+    },
+    "browser_action": {
+        "default_title": "Container Interceptor",
+        "default_popup": "popup.html",
+        "default_icon": "icon.png"
+    },
+    "icons": {
+        "48": "icon.png",
+        "96": "icon.png"
+    }
+}

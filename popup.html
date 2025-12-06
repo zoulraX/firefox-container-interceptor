@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Container Assignments</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            height: auto;
+            min-width: 300px;
+            padding: 10px;
+            background-color: #2b2a33;
+        }
+
+        .container {
+            padding: 10px;
+            box-shadow: none;
+            width: auto;
+            max-width: none;
+            background-color: transparent;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .assignment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #38383d;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .assignment-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        .site-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .container-name {
+            font-size: 0.8rem;
+            color: #bbb;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .remove-btn:hover {
+            color: #ff5252;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .empty-msg {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Assigned Sites</h2>
+        <div id="assignments-list">
+            <!-- Items injected here -->
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
