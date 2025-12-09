@@ -1,13 +1,39 @@
 
-// Whitelist specific tab IDs to allow one-time navigation
-// Map<tabId, { url: string, timestamp: number }>
-const tempWhitelist = new Map();
+// Context Menus
+browser.menus.create({
+    id: "open-selector",
+    title: "Select Profile",
+    contexts: ["page", "link"]
+});
 
-// Clean up old whitelist entries periodically
+browser.menus.create({
+    id: "add-profile",
+    title: "Add Profile",
+    contexts: ["page", "link"]
+});
+
+browser.menus.onClicked.addListener((info, tab) => {
+    let targetUrl = info.linkUrl || info.pageUrl;
+    if (!targetUrl || !targetUrl.startsWith('http')) return;
+
+    const encoded = encodeURIComponent(targetUrl);
+    let finalUrl = browser.runtime.getURL(`interstitial.html?target=${encoded}`);
+
+    if (info.menuItemId === "add-profile") {
+        finalUrl += "&mode=add";
+    }
+
+    browser.tabs.update(tab.id, { url: finalUrl });
+});
+
+// Whitelist specific protection logic...
+const tempWhitelist = new Map();
+const guestSessions = new Map();
+
 setInterval(() => {
     const now = Date.now();
     for (const [tabId, data] of tempWhitelist) {
-        if (now - data.timestamp > 10000) { // 10 seconds TTL
+        if (now - data.timestamp > 15000) {
             tempWhitelist.delete(tabId);
         }
     }
@@ -17,7 +43,6 @@ function isInterstitial(url) {
     return url.startsWith(browser.runtime.getURL("interstitial.html"));
 }
 
-// Extract hostname for preference storage
 function getHostname(url) {
     try {
         const u = new URL(url);
@@ -27,10 +52,23 @@ function getHostname(url) {
     }
 }
 
+browser.tabs.onRemoved.addListener(async (tabId) => {
+    if (guestSessions.has(tabId)) {
+        const cookieStoreId = guestSessions.get(tabId);
+        guestSessions.delete(tabId);
+        try {
+            await browser.contextualIdentities.remove(cookieStoreId);
+            console.log(`Guest container ${cookieStoreId} removed for tab ${tabId}`);
+        } catch (e) {
+            console.error(`Failed to remove guest container ${cookieStoreId}:`, e);
+        }
+    }
+});
+
 browser.webRequest.onBeforeRequest.addListener(
     function (details) {
-        if (details.frameId !== 0) return; // Only intercept main frame
-        if (isInterstitial(details.url)) return; // Don't intercept our own UI
+        if (details.frameId !== 0) return;
+        if (isInterstitial(details.url)) return;
 
         const url = new URL(details.url);
         if (!['http:', 'https:'].includes(url.protocol)) return;
@@ -38,22 +76,27 @@ browser.webRequest.onBeforeRequest.addListener(
         // Check whitelist
         if (tempWhitelist.has(details.tabId)) {
             const entry = tempWhitelist.get(details.tabId);
-            // Simple check: if the URL matches (or is close enough, to handle redirects? For now exact or startsWith)
-            // Actually, let's just trust the tabId for the immediate next request.
-            // But strict checking is better.
-            if (details.url === entry.url || details.url.startsWith(entry.url)) {
-                // Remove from whitelist to prevent permanent access, unless we navigate same tab?
-                // Let's keep it for a few seconds or until completion.
-                // Ideally, we want to allow the *first* navigation.
-                tempWhitelist.delete(details.tabId);
-                return;
+            const now = Date.now();
+
+            let match = false;
+            try {
+                if (entry.url === 'about:blank') {
+                    match = true;
+                } else {
+                    const entryHost = new URL(entry.url).hostname.replace(/^www\./, '');
+                    const currentHost = new URL(details.url).hostname.replace(/^www\./, '');
+                    if (currentHost === entryHost || details.url.startsWith(entry.url)) {
+                        match = true;
+                    }
+                }
+            } catch (e) { }
+
+            if (match && (now - entry.timestamp < 15000)) {
+                return; // ALLOW
+            } else {
+                if (now - entry.timestamp > 15000) tempWhitelist.delete(details.tabId);
             }
         }
-
-        // Check storage preferences
-        // Note: onBeforeRequest is synchronous blocking. 
-        // We cannot await storage.local.get here easily in Chrome, but Firefox supports blocking promises?
-        // Firefox `webRequest.onBeforeRequest` allows returning a Promise!
 
         return new Promise(async (resolve) => {
             const hostname = getHostname(details.url);
@@ -63,46 +106,73 @@ browser.webRequest.onBeforeRequest.addListener(
             }
 
             try {
-                const stored = await browser.storage.local.get(hostname);
-                const pref = stored[hostname];
+                // Fetch site specific data AND global settings
+                const stored = await browser.storage.local.get([hostname, 'globalSettings']);
+                const data = stored[hostname];
+                const settings = stored.globalSettings || { language: 'en', interceptAll: true };
 
-                if (pref && pref.dontShowAgain) {
-                    // Check if we are in the right container
-                    // pref.cookieStoreId is the desired one.
-                    // details.cookieStoreId is the current one.
-
-                    if (pref.cookieStoreId === details.cookieStoreId) {
-                        // Correct container, allow.
+                // Ignore search engines (Regex based)
+                if (!data) {
+                    const searchRegex = /^(www\.)?(google\.|bing\.|yahoo\.|duckduckgo\.|yandex\.|baidu\.|ask\.)/i;
+                    if (searchRegex.test(hostname)) {
                         resolve({});
                         return;
-                    } else {
-                        // Wrong container.
-                        // We need to cancel this request and open in the right one.
+                    }
 
-                        // We cannot change cookieStoreId of an existing tab. Use tabs.create + tabs.remove.
-
-                        await browser.tabs.create({
-                            url: details.url,
-                            cookieStoreId: pref.cookieStoreId,
-                            active: true
-                        });
-
-                        // Close the old tab (the one that made the request).
-                        await browser.tabs.remove(details.tabId);
-
-                        resolve({ cancel: true });
+                    // Check Global Interception Preference (If unconfigured)
+                    if (settings.interceptAll === false) {
+                        resolve({});
                         return;
+                    }
+                }
+
+                if (data) {
+                    let shouldSkip = false;
+                    let targetCookieStoreId = null;
+
+                    if (data.settings && data.settings.dontShowAgain) {
+                        // V2 Schema - Check preferredCookieStoreId OR defaultProfileId
+                        if (data.settings.preferredCookieStoreId) {
+                            shouldSkip = true;
+                            targetCookieStoreId = data.settings.preferredCookieStoreId;
+                        } else if (data.settings.defaultProfileId && data.profiles) {
+                            const profile = data.profiles.find(p => p.id === data.settings.defaultProfileId);
+                            if (profile) {
+                                shouldSkip = true;
+                                targetCookieStoreId = profile.cookieStoreId;
+                            }
+                        }
+                    } else if (data.dontShowAgain && data.cookieStoreId) {
+                        // V1 Schema
+                        shouldSkip = true;
+                        targetCookieStoreId = data.cookieStoreId;
+                    }
+
+                    if (shouldSkip && targetCookieStoreId) {
+                        if (targetCookieStoreId === details.cookieStoreId) {
+                            resolve({});
+                            return;
+                        } else {
+                            try {
+                                await browser.tabs.create({
+                                    url: details.url,
+                                    cookieStoreId: targetCookieStoreId,
+                                    active: true
+                                });
+                                await browser.tabs.remove(details.tabId);
+                                resolve({ cancel: true });
+                            } catch (e) { }
+                            return;
+                        }
                     }
                 }
             } catch (e) {
                 console.error("Storage check error:", e);
             }
 
-            // No preference, or explicit "Ask me".
-            // Redirect to interstitial
+            // Show Interstitial
             const targetUrl = encodeURIComponent(details.url);
             const interstitialUrl = browser.runtime.getURL(`interstitial.html?target=${targetUrl}`);
-
             resolve({ redirectUrl: interstitialUrl });
         });
     },
@@ -110,81 +180,85 @@ browser.webRequest.onBeforeRequest.addListener(
     ["blocking"]
 );
 
-// Message listener from Interstitial
+// Message listener
 browser.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-    if (message.type === 'OPEN_URL') {
-        const { url, cookieStoreId, savePreference, hostname } = message;
+
+    if (message.type === 'CREATE_GUEST') {
+        try {
+            const container = await browser.contextualIdentities.create({
+                name: "Guest " + Date.now().toString().slice(-4),
+                color: "toolbar",
+                icon: "circle"
+            });
+            // Send back the full container object
+            return container;
+        } catch (e) {
+            console.error("Error creating guest container:", e);
+        }
+    }
+
+    else if (message.type === 'OPEN_URL') {
+        const { url, cookieStoreId, savePreference, hostname, profileId, isGuest } = message;
 
         if (savePreference && hostname) {
-            await browser.storage.local.set({
-                [hostname]: {
-                    dontShowAgain: true,
-                    cookieStoreId: cookieStoreId
+            try {
+                const stored = await browser.storage.local.get(hostname);
+                let data = stored[hostname] || { profiles: [], settings: {} };
+                if (!data.settings) data.settings = {};
+
+                data.settings.dontShowAgain = true;
+
+                if (profileId) {
+                    data.settings.defaultProfileId = profileId;
+                    data.settings.preferredCookieStoreId = cookieStoreId;
+                } else {
+                    data.settings.defaultProfileId = null;
+                    data.settings.preferredCookieStoreId = cookieStoreId;
                 }
-            });
+
+                await browser.storage.local.set({ [hostname]: data });
+            } catch (e) { console.error("Save pref failed", e); }
         }
 
-        // Check if we can stay in the same tab (preserve history)
-        // sender.tab might be undefined if sent from non-tab context, but here it comes from interstitial page in a tab.
+        // Check if we can stay in the same tab
         if (sender.tab && sender.tab.cookieStoreId === cookieStoreId) {
             try {
-                // Whitelist first to allow the request
+                // Whitelist first
                 tempWhitelist.set(sender.tab.id, {
                     url: url,
                     timestamp: Date.now()
                 });
-
                 await browser.tabs.update(sender.tab.id, { url: url });
-                // No need to remove sender tab, we updated it.
-            } catch (e) {
-                console.error("Tab update failed:", e);
-            }
+
+                if (isGuest) {
+                    guestSessions.set(sender.tab.id, cookieStoreId);
+                }
+            } catch (e) { console.error("Tab update failed:", e); }
         } else {
-            // Different container (or new tab requested implicitly), must create new tab
+            // New tab needed (Different container)
             try {
                 const tab = await browser.tabs.create({
-                    url: url,
+                    url: "about:blank",
                     cookieStoreId: cookieStoreId,
                     active: true,
                     index: sender.tab ? sender.tab.index + 1 : undefined
                 });
 
-                // Whitelist this tabId
-                tempWhitelist.set(tab.id, {
-                    url: url,
-                    timestamp: Date.now()
-                });
+                tempWhitelist.set(tab.id, { url: url, timestamp: Date.now() });
 
-                // Close the interstitial tab (the sender)
+                if (isGuest) {
+                    guestSessions.set(tab.id, cookieStoreId);
+                }
+
+                // Now navigate
+                await browser.tabs.update(tab.id, { url: url });
+
+                // Close sender
                 if (sender.tab && sender.tab.id) {
                     await browser.tabs.remove(sender.tab.id);
                 }
-
             } catch (e) {
                 console.error("Tab creation failed:", e);
-            }
-        }
-    } else if (message.type === 'RESET_PREFS') {
-        // ... implementation later
-    }
-});
-
-// Menus
-browser.menus.create({
-    id: "reset-container-prefs",
-    title: "Reset Container Settings for this Site",
-    contexts: ["all"],
-    onclick: async (info, tab) => {
-        // Get hostname from info.pageUrl or tab.url
-        const url = info.pageUrl || tab?.url;
-        if (url) {
-            const hostname = getHostname(url);
-            if (hostname) {
-                await browser.storage.local.remove(hostname);
-                // Maybe show a notification?
-                console.log(`Preferences reset for ${hostname}`);
-                // Reload the page to trigger interception again?
-                browser.tabs.reload(tab.id);
             }
         }
     }

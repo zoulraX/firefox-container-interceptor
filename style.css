@@ -1,112 +1,340 @@
-body {
-    background-color: #2b2a33;
-    /* Firefox Dark Theme specific */
-    color: #f9f9fa;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+/* ... existing styles ... */
+:root {
+    --bg-color: #141414;
+    --card-hover: #e5e5e5;
+    --text-color: #fff;
+    --sub-text: #808080;
+    --accent: #e50914;
+    --accent-blue: #0080ff;
+    --modal-bg: #2b2b2b;
 }
 
-.container {
-    background-color: #42414d;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.main-container {
     text-align: center;
-    max-width: 400px;
-    width: 90%;
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    /* Key for positioning footer at bottom of container if needed, but absolute is easier for corners */
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    height: 100%;
+    /* Occupy full height to easy position absolute elements relative to screen */
+    justify-content: center;
+    /* Center content vertically */
 }
 
 h1 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 400;
+    font-size: 3.5vw;
+    margin-bottom: 2rem;
 }
 
-#target-site {
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
-    color: #cfcfd8;
-    word-break: break-all;
-}
-
-#options-list {
-    margin: 20px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Scrollbar styling */
-#options-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-#options-list::-webkit-scrollbar-track {
-    background: #38383d;
-}
-
-#options-list::-webkit-scrollbar-thumb {
-    background: #666;
-    border-radius: 3px;
-}
-
-button {
-    padding: 12px 16px;
-    border: 1px solid #5b5b66;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: #38383d;
-    color: white;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    /* Align Left */
-    gap: 15px;
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-button:hover {
-    background-color: #52525e;
-    border-color: #6b6b76;
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-.icon-circle {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-.preferences {
-    margin-top: 25px;
-    font-size: 0.9rem;
-    color: #b1b1b3;
+/* Grid */
+.profiles-grid {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 2vw;
+    margin-bottom: 3rem;
 }
 
-.preferences label {
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    group: hover;
+    position: relative;
+    width: 10vw;
+    max-width: 150px;
+    min-width: 100px;
+}
+
+.profile-card:hover .profile-name {
+    color: white;
+}
+
+.profile-card:hover .profile-icon {
+    border-color: white;
+}
+
+.profile-icon {
+    width: 100%;
+    height: 10vw;
+    max-height: 150px;
+    min-height: 100px;
+    background-color: #333;
+    border-radius: 4px;
+    border: 3px solid transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    font-size: 2rem;
+}
+
+.profile-icon.guest {
+    background-color: #444;
+}
+
+.profile-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-icon span {
+    font-size: 4rem;
+    color: #808080;
+}
+
+.profile-name {
+    color: var(--sub-text);
+    font-size: 1.2vw;
+    transition: color 0.2s;
+}
+
+/* Edit Button Overlay */
+.edit-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: none;
+    color: white;
+    font-size: 12px;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-card:hover .edit-btn {
+    display: flex;
+}
+
+.edit-btn:hover {
+    background: white;
+    color: black;
+}
+
+/* Guest & Info */
+.info-icon {
+    position: absolute;
+    bottom: -20px;
+    right: 0;
+    font-size: 0.8rem;
+    color: #666;
+    border: 1px solid #666;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: help;
+}
+
+/* Skip Button & Checkbox Positioning */
+.skip-btn {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    background: transparent;
+    border: 1px solid #808080;
+    color: #808080;
+    padding: 0.5rem 1.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.skip-btn:hover {
+    color: white;
+    border-color: white;
+}
+
+.main-footer {
+    position: absolute;
+    bottom: 90px;
+    /* Above skip button (40px bottom + height + margin) */
+    right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    /* Align to right */
+    gap: 10px;
+    z-index: 10;
+}
+
+.checkbox-label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    color: #808080;
+    font-size: 0.9rem;
     cursor: pointer;
+}
+
+.checkbox-label:hover {
+    color: white;
 }
 
 input[type="checkbox"] {
-    accent-color: #00ddff;
     width: 16px;
     height: 16px;
+    accent-color: #e50914;
+}
+
+
+.site-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.modal-content {
+    background: var(--modal-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    width: 400px;
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    color: #ccc;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group select {
+    padding: 0.8rem;
+    background: #444;
+    border: none;
+    color: white;
+    border-radius: 4px;
+}
+
+.container-select-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.container-select-wrapper select {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 2rem;
+}
+
+.primary-btn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-weight: bold;
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid #666;
+    color: white;
+    padding: 0.8rem 1.5rem;
+}
+
+.danger-btn {
+    background: transparent;
+    border: 1px solid red;
+    color: red;
+    padding: 0.8rem 1.5rem;
+    margin-left: auto;
+}
+
+/* Modal Grids */
+.color-grid,
+.icon-grid,
+.emoji-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.grid-item {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #444;
+    transition: all 0.2s;
+}
+
+.grid-item:hover {
+    border-color: #888;
+    transform: scale(1.1);
+}
+
+.grid-item.selected {
+    border-color: #fff;
+    background: #555;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.emoji-grid .grid-item {
+    font-size: 1.5rem;
+    background: transparent;
 }

@@ -1,24 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <title>Container Selection</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Profile</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="container">
-        <h1>Container Selection</h1>
-        <p id="target-site">Connecting to...</p>
-        <div id="options-list">
-            <!-- Options will be injected here -->
+    <div class="main-container">
+        <h1 id="page-title">Select Profile</h1>
+
+        <div id="profiles-grid" class="profiles-grid">
+            <!-- Profiles will be injected here -->
+
+            <!-- Guest Profile Template -->
+            <div class="profile-card guest" id="guest-profile">
+                <div class="profile-icon guest">
+                    <span style="font-size: 2rem;">👻</span>
+                </div>
+                <div class="profile-name">Guest</div>
+                <div class="info-icon" title="Temporary container. Deleted when tab is closed.">i</div>
+            </div>
+
+            <!-- Add Profile Template -->
+            <div class="profile-card add-profile" id="add-profile-btn">
+                <div class="profile-icon">
+                    <span>+</span>
+                </div>
+                <div class="profile-name">Add Profile</div>
+            </div>
         </div>
-        <div class="preferences">
-            <label>
-                <input type="checkbox" id="dont-show-again">
-                Don't show again for this site
+
+        <div class="main-footer">
+            <label class="checkbox-label" id="main-checkbox-label">
+                <input type="checkbox" id="main-dont-show">
+                Don't show this screen for this site
             </label>
+        </div>
+
+        <button id="skip-btn" class="skip-btn">Skip</button>
+
+        <div class="site-info" id="target-site"></div>
+
+        <!-- Create/Edit Modal -->
+        <div id="profile-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="modal-title">Add Profile</h2>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="modal-name-input" placeholder="Work, Personal, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Icon</label>
+                    <!-- Enhanced Emoji Grid -->
+                    <div class="emoji-grid" id="modal-emoji-grid">
+                        <!-- Emojis injected via JS -->
+                    </div>
+                    <input type="hidden" id="modal-icon-val">
+                </div>
+                <div class="form-group">
+                    <label>Container</label>
+                    <div class="container-select-wrapper">
+                        <select id="modal-container-select">
+                            <!-- Containers loaded here -->
+                        </select>
+                        <button id="create-container-inline-btn" title="Create new container"
+                            class="secondary-btn">+</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="modal-save-btn" class="primary-btn">Save</button>
+                    <button id="modal-cancel-btn" class="secondary-btn">Cancel</button>
+                    <button id="modal-delete-btn" class="danger-btn hidden">Delete Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Container Modal (Overlay) -->
+        <div id="container-modal" class="modal hidden" style="z-index: 200;">
+            <div class="modal-content" style="width: 350px;">
+                <h2 style="margin-top:0;">New Container</h2>
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="c-name">
+                </div>
+
+                <div class="form-group">
+                    <label>Color</label>
+                    <div class="color-grid" id="c-color-grid"></div>
+                    <input type="hidden" id="c-color-val" value="blue">
+                </div>
+
+                <div class="form-group">
+                    <label>Icon</label>
+                    <div class="icon-grid" id="c-icon-grid"></div>
+                    <input type="hidden" id="c-icon-val" value="circle">
+                </div>
+
+                <div class="form-actions">
+                    <button id="c-save" class="primary-btn">Create</button>
+                    <button id="c-cancel" class="secondary-btn">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
     <script src="interstitial.js"></script>
 </body>
+
 </html>

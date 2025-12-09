@@ -1,93 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <title>Container Assignments</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        body {
-            height: auto;
-            min-width: 300px;
-            padding: 10px;
-            background-color: #2b2a33;
-        }
-
-        .container {
-            padding: 10px;
-            box-shadow: none;
-            width: auto;
-            max-width: none;
-            background-color: transparent;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-            border-bottom: 1px solid #555;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-
-        .assignment-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #38383d;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 5px;
-        }
-
-        .assignment-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            overflow: hidden;
-        }
-
-        .site-name {
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        .container-name {
-            font-size: 0.8rem;
-            color: #bbb;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .remove-btn {
-            background: none;
-            border: none;
-            color: #ff6b6b;
-            cursor: pointer;
-            padding: 5px;
-            font-size: 1.2rem;
-            line-height: 1;
-        }
-
-        .remove-btn:hover {
-            color: #ff5252;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-
-        .empty-msg {
-            color: #888;
-            font-style: italic;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension Popup</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 
 <body>
-    <div class="container">
-        <h2>Assigned Sites</h2>
-        <div id="assignments-list">
-            <!-- Items injected here -->
+    <header>
+        <div style="display: flex; align-items: center;">
+            <button id="back-btn" class="icon-btn hidden">&larr;</button>
+            <h1 id="header-title" data-i18n="mySites">My Sites</h1>
+        </div>
+        <button id="settings-btn" class="icon-btn" title="Settings">&#9881;</button>
+    </header>
+
+    <main id="main-view">
+        <div id="sites-list"></div>
+        <div class="add-site-form">
+            <input type="text" id="new-site-input" placeholder="example.com">
+            <button id="add-site-btn" class="btn" data-i18n="add">Add</button>
+        </div>
+    </main>
+
+    <main id="detail-view" class="hidden">
+        <div class="profile-list" id="profile-list"></div>
+        <button id="add-profile-btn" class="btn" style="width: 100%; margin-top: 15px;" data-i18n="addProfile">+ Add
+            Profile</button>
+    </main>
+
+    <!-- Settings View -->
+    <main id="settings-view" class="hidden">
+        <h2 style="margin-top:0;" data-i18n="generalSettings">General Settings</h2>
+
+        <div style="margin-bottom:20px;">
+            <label style="display:block; color:#aaa; margin-bottom:5px;" data-i18n="interceptBehavior">Intercept
+                Behavior</label>
+            <select id="settings-intercept"
+                style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:4px;">
+                <option value="all" data-i18n="interceptAll">Show selector for all sites</option>
+                <option value="configured" data-i18n="interceptConfigured">Only show for sites with profiles</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <!-- Button to open Exceptions View -->
+            <button id="open-exceptions-btn"
+                style="background:#444; border:none; color:white; padding:10px; width:100%; cursor:pointer; text-align:left; border-radius:4px;">
+                Exceptions &nbsp; &rsaquo;
+            </button>
+        </div>
+
+        <button id="settings-save" class="btn" style="width:100%;" data-i18n="save">Save</button>
+    </main>
+
+    <!-- Exceptions View (Separate Screen) -->
+    <main id="exceptions-view" class="hidden">
+        <p style="color:#aaa; font-size:0.9rem; margin-top:0;">Sites where "Don't show again" is active.</p>
+        <div id="exceptions-list"></div>
+    </main>
+
+    <!-- Profile Form Modal -->
+    <div id="popup-modal" class="hidden"
+        style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); padding:20px; display:flex; flex-direction:column; justify-content:center; z-index: 50;">
+        <h2 style="margin-top:0;" data-i18n="newProfile">New Profile</h2>
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="name">Name</label>
+        <input type="text" id="p-name" style="margin-bottom:15px; width:100%; box-sizing:border-box;">
+
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="icon">Icon</label>
+        <div class="emoji-grid" id="p-emoji-grid"></div>
+        <input type="hidden" id="p-icon-val">
+
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="container">Container</label>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <select id="p-container"
+                style="background:#333; color:white; padding:8px; border:none; width:100%; flex:1;">
+            </select>
+            <button id="p-create-container-btn"
+                style="background:#444; border:1px solid #666; color:white; width:30px; cursor:pointer;">+</button>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button id="p-save" class="btn" style="flex:1;" data-i18n="save">Save</button>
+            <button id="p-cancel" class="btn secondary-btn" style="flex:1;" data-i18n="cancel">Cancel</button>
         </div>
     </div>
+
+    <!-- Create Container Modal -->
+    <div id="container-modal" class="hidden"
+        style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); padding:20px; display:flex; flex-direction:column; justify-content:center; z-index: 60;">
+        <h2 style="margin-top:0;" data-i18n="newContainer">New Container</h2>
+
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="name">Name</label>
+        <input type="text" id="c-name" style="margin-bottom:15px; width:100%; box-sizing:border-box;">
+
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="color">Color</label>
+        <div class="color-grid" id="c-color-grid"></div>
+        <input type="hidden" id="c-color-val" value="blue">
+
+        <label style="color:#aaa; font-size:0.9rem;" data-i18n="icon">Icon</label>
+        <div class="icon-grid" id="c-icon-grid"></div>
+        <input type="hidden" id="c-icon-val" value="circle">
+
+        <div style="display:flex; gap:10px; margin-top: 15px;">
+            <button id="c-save" class="btn" style="flex:1;" data-i18n="create">Create</button>
+            <button id="c-cancel" class="btn secondary-btn" style="flex:1;" data-i18n="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <script src="locales.js"></script>
     <script src="popup.js"></script>
 </body>
 
