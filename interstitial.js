@@ -111,25 +111,47 @@ function renderGrid() {
     // 2. Render Guest Profile
     const guestCard = document.createElement('div');
     guestCard.className = 'profile-card guest';
-    guestCard.innerHTML = `
-        <div class="profile-icon guest">
-            <span style="font-size: 2rem;">👻</span> 
-        </div>
-        <div class="profile-name" data-i18n="guest">Guest</div>
-        <div class="info-icon" data-i18n-title="guestTooltip">i</div>
-    `;
+
+    const guestIcon = document.createElement('div');
+    guestIcon.className = 'profile-icon guest';
+    const guestEmoji = document.createElement('span');
+    guestEmoji.style.fontSize = '2rem';
+    guestEmoji.textContent = '👻';
+    guestIcon.appendChild(guestEmoji);
+
+    const guestName = document.createElement('div');
+    guestName.className = 'profile-name';
+    guestName.setAttribute('data-i18n', 'guest');
+    guestName.textContent = 'Guest';
+
+    const infoIcon = document.createElement('div');
+    infoIcon.className = 'info-icon';
+    infoIcon.setAttribute('data-i18n-title', 'guestTooltip');
+    infoIcon.textContent = 'i';
+
+    guestCard.appendChild(guestIcon);
+    guestCard.appendChild(guestName);
+    guestCard.appendChild(infoIcon);
     guestCard.onclick = openGuest;
     profilesGrid.appendChild(guestCard);
 
     // 3. Render Add Profile
     const addCard = document.createElement('div');
     addCard.className = 'profile-card add-profile';
-    addCard.innerHTML = `
-        <div class="profile-icon">
-            <span>+</span>
-        </div>
-        <div class="profile-name" data-i18n="addProfile">Add Profile</div>
-    `;
+
+    const addIcon = document.createElement('div');
+    addIcon.className = 'profile-icon';
+    const addSpan = document.createElement('span');
+    addSpan.textContent = '+';
+    addIcon.appendChild(addSpan);
+
+    const addName = document.createElement('div');
+    addName.className = 'profile-name';
+    addName.setAttribute('data-i18n', 'addProfile');
+    addName.textContent = 'Add Profile';
+
+    addCard.appendChild(addIcon);
+    addCard.appendChild(addName);
     addCard.onclick = () => openModal();
     profilesGrid.appendChild(addCard);
 
@@ -143,13 +165,29 @@ function createProfileCard(profile) {
     // Determine icon (emoji or first letter)
     let iconContent = profile.icon || profile.name.charAt(0).toUpperCase();
 
-    div.innerHTML = `
-        <div class="profile-icon" style="background-color: ${profile.color || '#333'}">
-            <span style="font-size: 2.5rem; color: white;">${iconContent}</span>
-            <div class="edit-btn" title="Edit Profile">✏️</div>
-        </div>
-        <div class="profile-name">${profile.name}</div>
-    `;
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'profile-icon';
+    iconDiv.style.backgroundColor = profile.color || '#333';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.style.fontSize = '2.5rem';
+    iconSpan.style.color = 'white';
+    iconSpan.textContent = iconContent;
+
+    const editBtn = document.createElement('div');
+    editBtn.className = 'edit-btn';
+    editBtn.title = 'Edit Profile';
+    editBtn.textContent = '✏️';
+
+    iconDiv.appendChild(iconSpan);
+    iconDiv.appendChild(editBtn);
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'profile-name';
+    nameDiv.textContent = profile.name;
+
+    div.appendChild(iconDiv);
+    div.appendChild(nameDiv);
 
     // Click on card -> Open
     div.addEventListener('click', (e) => {
@@ -218,7 +256,7 @@ async function openModal(profile = null) {
         item.className = 'grid-item';
 
         if (e === '') {
-            item.innerHTML = '🗑️'; // Trash icon
+            item.textContent = '🗑️'; // Trash icon
             item.title = 'Remove Icon';
             item.style.fontSize = '1.2rem';
         } else {
@@ -241,7 +279,12 @@ async function openModal(profile = null) {
     });
 
     // Load containers
-    containerSelect.innerHTML = '<option value="">Select Container...</option>';
+    containerSelect.innerHTML = '';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Select Container...';
+    containerSelect.appendChild(defaultOpt);
+
     const containers = await browser.contextualIdentities.query({});
     containers.forEach(c => {
         const opt = document.createElement('option');
@@ -373,7 +416,7 @@ function openContainerModal() {
         item.className = 'grid-item';
 
         const img = document.createElement('img');
-        img.src = `icons/${i}.svg`;
+        img.src = 'icons/' + i + '.svg';
         img.style.width = '20px';
         img.style.height = '20px';
         img.style.pointerEvents = 'none'; // click goes to parent div

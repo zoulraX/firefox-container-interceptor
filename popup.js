@@ -168,7 +168,12 @@ async function loadExceptions() {
 
     list.innerHTML = '';
     if (exceptions.length === 0) {
-        list.innerHTML = `<div style="color:#777; font-style:italic; padding:10px;">${getTranslation('noSites', currentLang) || 'No exceptions.'}</div>`;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.color = '#777';
+        emptyDiv.style.fontStyle = 'italic';
+        emptyDiv.style.padding = '10px';
+        emptyDiv.textContent = getTranslation('noSites', currentLang) || 'No exceptions.';
+        list.appendChild(emptyDiv);
     } else {
         exceptions.forEach(ex => {
             const row = document.createElement('div');
@@ -180,12 +185,21 @@ async function loadExceptions() {
             row.style.marginBottom = '5px';
             row.style.borderRadius = '4px';
 
-            row.innerHTML = `
-                <span>${ex.host}</span>
-                <span style="color:#f06595; cursor:pointer; font-weight:bold; padding:0 5px;" title="Remove exception">&times;</span>
-             `;
+            const hostSpan = document.createElement('span');
+            hostSpan.textContent = ex.host;
 
-            row.querySelector('span:last-child').onclick = async () => {
+            const removeSpan = document.createElement('span');
+            removeSpan.style.color = '#f06595';
+            removeSpan.style.cursor = 'pointer';
+            removeSpan.style.fontWeight = 'bold';
+            removeSpan.style.padding = '0 5px';
+            removeSpan.title = 'Remove exception';
+            removeSpan.textContent = '×';
+
+            row.appendChild(hostSpan);
+            row.appendChild(removeSpan);
+
+            removeSpan.onclick = async () => {
                 const newData = ex.data;
                 newData.settings.dontShowAgain = false;
 
@@ -212,20 +226,36 @@ async function loadSites() {
             hasSites = true;
             const item = document.createElement('div');
             item.className = 'site-item';
-            item.innerHTML = `
-                <div class="site-intro">
-                    <div class="site-domain">${host}</div>
-                    <div class="site-meta">${count} profiles</div>
-                </div>
-                <div style="font-size:1.5rem;">&rsaquo;</div>
-            `;
+            const intro = document.createElement('div');
+            intro.className = 'site-intro';
+
+            const domain = document.createElement('div');
+            domain.className = 'site-domain';
+            domain.textContent = host;
+
+            const meta = document.createElement('div');
+            meta.className = 'site-meta';
+            meta.textContent = count + ' profiles';
+
+            intro.appendChild(domain);
+            intro.appendChild(meta);
+
+            const arrow = document.createElement('div');
+            arrow.style.fontSize = '1.5rem';
+            arrow.textContent = '›';
+
+            item.appendChild(intro);
+            item.appendChild(arrow);
             item.onclick = () => showDetail(host);
             sitesList.appendChild(item);
         }
     });
 
     if (!hasSites) {
-        sitesList.innerHTML = `<div class="empty-state">${getTranslation('noSites', currentLang)}</div>`;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.textContent = getTranslation('noSites', currentLang);
+        sitesList.appendChild(emptyDiv);
     }
 }
 
@@ -241,7 +271,11 @@ async function loadProfiles(hostname) {
     const data = stored[hostname];
 
     if (!data || !data.profiles || data.profiles.length === 0) {
-        profileList.innerHTML = `<div class="empty-state">${getTranslation('noProfiles', currentLang)}</div>`;
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-state';
+        emptyDiv.textContent = getTranslation('noProfiles', currentLang);
+        profileList.innerHTML = '';
+        profileList.appendChild(emptyDiv);
     } else {
         profileList.innerHTML = '';
         const containers = await browser.contextualIdentities.query({});
@@ -249,19 +283,38 @@ async function loadProfiles(hostname) {
             const row = document.createElement('div');
             row.className = 'profile-item';
             const cName = getContainerName(p.cookieStoreId, containers);
-            row.innerHTML = `
-                <div class="profile-icon" style="background-color: ${p.color}; color: white;">
-                    ${p.icon || p.name[0]}
-                </div>
-                <div class="profile-info">
-                    <span class="profile-name">${p.name}</span>
-                    <span class="profile-container">${cName}</span>
-                </div>
-                <button class="delete-btn">&times;</button>
-            `;
-            row.querySelector('.delete-btn').onclick = async (e) => {
+
+            const icon = document.createElement('div');
+            icon.className = 'profile-icon';
+            icon.style.backgroundColor = p.color;
+            icon.style.color = 'white';
+            icon.textContent = p.icon || p.name[0];
+
+            const info = document.createElement('div');
+            info.className = 'profile-info';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'profile-name';
+            nameSpan.textContent = p.name;
+
+            const containerSpan = document.createElement('span');
+            containerSpan.className = 'profile-container';
+            containerSpan.textContent = cName;
+
+            info.appendChild(nameSpan);
+            info.appendChild(containerSpan);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-btn';
+            deleteButton.textContent = '×';
+
+            row.appendChild(icon);
+            row.appendChild(info);
+            row.appendChild(deleteButton);
+
+            deleteButton.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm(`${getTranslation('profileDeleted', currentLang)} ${p.name}?`)) {
+                if (confirm(getTranslation('profileDeleted', currentLang) + ' ' + p.name + '?')) {
                     const newData = stored[hostname];
                     newData.profiles = newData.profiles.filter(x => x.id !== p.id);
                     await browser.storage.local.set({ [hostname]: newData });
@@ -318,7 +371,7 @@ async function openModal() {
         const item = document.createElement('div');
         item.className = 'grid-item';
         if (e === '') {
-            item.innerHTML = '🗑️';
+            item.textContent = '🗑️';
         } else {
             item.textContent = e;
         }
@@ -335,10 +388,13 @@ async function openModal() {
         pEmojiGrid.appendChild(item);
     });
 
-    pContainer.innerHTML = '<option value="">Loading...</option>';
+    pContainer.innerHTML = '';
     const containers = await browser.contextualIdentities.query({});
 
-    pContainer.innerHTML = `<option value="">${getTranslation('selectContainer', currentLang)}</option>`;
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = getTranslation('selectContainer', currentLang);
+    pContainer.appendChild(defaultOpt);
 
     containers.forEach(c => {
         const opt = document.createElement('option');
@@ -412,7 +468,7 @@ function openContainerModal() {
         item.className = 'grid-item';
 
         const img = document.createElement('img');
-        img.src = `icons/${i}.svg`;
+        img.src = 'icons/' + i + '.svg';
         img.style.width = '20px';
         img.style.height = '20px';
         img.style.pointerEvents = 'none';
