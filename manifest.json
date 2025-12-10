@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Container Interceptor",
-    "version": "2.1.5",
+    "version": "2.2",
     "description": "Intercepts navigation to let user choose a container.",
     "permissions": [
         "webRequest",
