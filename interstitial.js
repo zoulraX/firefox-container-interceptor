@@ -127,6 +127,7 @@ function renderGrid() {
     const infoIcon = document.createElement('div');
     infoIcon.className = 'info-icon';
     infoIcon.setAttribute('data-i18n-title', 'guestTooltip');
+    infoIcon.title = 'Temporary container. Deleted when tab is closed.';
     infoIcon.textContent = 'i';
 
     guestCard.appendChild(guestIcon);

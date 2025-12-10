@@ -152,6 +152,13 @@ h1 {
     justify-content: center;
     align-items: center;
     cursor: help;
+    z-index: 5;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.info-icon:hover {
+    color: #aaa;
+    border-color: #aaa;
 }
 
 /* Skip Button & Checkbox Positioning */
